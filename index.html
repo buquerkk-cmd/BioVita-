@@ -1,0 +1,220 @@
+(function(){
+  const money = value => value.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const products = window.BIOVITA_PRODUCTS || [];
+  const kits = window.BIOVITA_KITS || [];
+  const byId = id => products.find(p=>p.id===id);
+  window.BioVita = { money, products, kits, byId };
+
+  function qs(sel, root=document){ return root.querySelector(sel); }
+  function qsa(sel, root=document){ return [...root.querySelectorAll(sel)]; }
+
+  // menu
+  const menu = qs('#menuOverlay');
+  qsa('[data-open-menu]').forEach(b=>b.addEventListener('click',()=>menu?.classList.add('open')));
+  qsa('[data-close-menu]').forEach(b=>b.addEventListener('click',()=>menu?.classList.remove('open')));
+  qsa('.menu-overlay a').forEach(a=>a.addEventListener('click',()=>menu?.classList.remove('open')));
+
+  // search
+  const search = qs('#searchOverlay');
+  const overlaySearchInput = qs('#overlaySearchInput');
+  const overlaySearchResults = qs('#overlaySearchResults');
+  const pageSearchInput = qs('#pageSearchInput');
+  const pageSearchResults = qs('#pageSearchResults');
+  qsa('[data-open-search]').forEach(b=>b.addEventListener('click',(e)=>{ e.preventDefault(); openSearch(); }));
+  qsa('[data-close-search]').forEach(b=>b.addEventListener('click',closeSearch));
+  qsa('[data-search-chip]').forEach(ch=>ch.addEventListener('click',()=>{
+    const term = ch.dataset.searchChip;
+    if(pageSearchInput && document.body.contains(pageSearchInput)){ pageSearchInput.value = term; renderSearch(term, pageSearchResults); }
+    else { openSearch(term); }
+  }));
+  function openSearch(term=''){ search?.classList.add('open'); if(term) overlaySearchInput.value = term; setTimeout(()=>overlaySearchInput?.focus(),50); renderSearch(overlaySearchInput?.value || term || '', overlaySearchResults); }
+  function closeSearch(){ search?.classList.remove('open'); }
+  overlaySearchInput?.addEventListener('input', e=>renderSearch(e.target.value, overlaySearchResults));
+  pageSearchInput?.addEventListener('input', e=>renderSearch(e.target.value, pageSearchResults));
+  if(pageSearchInput) renderSearch('', pageSearchResults);
+  function renderSearch(term='', target){
+    if(!target) return;
+    const clean = term.trim().toLowerCase();
+    let list = products;
+    if(clean) list = products.filter(p => [p.name,p.category,p.type,p.active,p.short,...p.tags].join(' ').toLowerCase().includes(clean));
+    if(!clean){
+      target.innerHTML = '<div class="search-empty">Digite um produto, ativo ou necessidade. Exemplos: acne, manchas, oleosidade, ácido salicílico.</div>';
+      return;
+    }
+    if(!list.length){
+      target.innerHTML = '<div class="search-empty">Nenhum resultado encontrado. Tente buscar por acne, manchas, limpeza ou reparação.</div>';
+      return;
+    }
+    target.innerHTML = list.map(p=>`
+      <a class="mini-card" href="${p.page}">
+        <img src="${p.image}" alt="${p.name}">
+        <h3>${p.name}</h3>
+        <p>${p.category} · ${p.active}</p>
+        <strong>${money(p.price)}</strong>
+      </a>`).join('');
+  }
+
+  // cart / plan
+  function getCart(){ try { return JSON.parse(localStorage.getItem('biovitaCart') || '[]'); } catch { return []; } }
+  function setCart(ids){ localStorage.setItem('biovitaCart', JSON.stringify([...new Set(ids)])); updateCartUI(); }
+  function addToCart(id){ const ids=getCart(); if(!ids.includes(id)) ids.push(id); setCart(ids); toast(`${byId(id)?.name || 'Produto'} adicionado ao plano`); openCart(false); }
+  function removeFromCart(id){ setCart(getCart().filter(x=>x!==id)); }
+  function clearCart(){ setCart([]); }
+  window.addToCart = addToCart;
+  window.removeFromCart = removeFromCart;
+  window.clearCart = clearCart;
+
+  const drawer = qs('#cartDrawer');
+  const backdrop = qs('#drawerBackdrop');
+  qsa('[data-open-cart]').forEach(b=>b.addEventListener('click',(e)=>{ e.preventDefault(); openCart(true); }));
+  qsa('[data-close-cart]').forEach(b=>b.addEventListener('click',closeCart));
+  backdrop?.addEventListener('click',closeCart);
+  function openCart(force=true){ if(force){ drawer?.classList.add('open'); backdrop?.classList.add('open'); } updateCartUI(); }
+  function closeCart(){ drawer?.classList.remove('open'); backdrop?.classList.remove('open'); }
+
+  function updateCartUI(){
+    const ids = getCart();
+    const items = ids.map(byId).filter(Boolean);
+    qsa('[data-cart-count]').forEach(el=>el.textContent = items.length);
+    const list = qs('#cartItems');
+    const total = items.reduce((s,p)=>s+p.price,0);
+    if(list){
+      list.innerHTML = items.length ? items.map(p=>`
+        <div class="cart-item">
+          <img src="${p.image}" alt="${p.name}">
+          <div><h4>${p.name}</h4><p>${p.active}</p><strong>${money(p.price)}</strong></div>
+          <button class="cart-remove" onclick="removeFromCart('${p.id}')" aria-label="Remover ${p.name}">×</button>
+        </div>`).join('') : '<div class="empty-state">Seu plano está vazio. Adicione produtos ou faça o diagnóstico.</div>';
+    }
+    qsa('[data-cart-total]').forEach(el=>el.textContent = money(total));
+    renderCheckoutSummary();
+  }
+
+  // Product grids
+  function productCard(p){
+    return `<article class="product-tile" data-category="${p.category}" data-tags="${p.tags.join(' ')}">
+      <a class="product-image-wrap" href="${p.page}"><span class="product-badge">${p.category}</span><img src="${p.image}" alt="${p.name}"></a>
+      <div class="product-info">
+        <h3><a href="${p.page}">${p.name}</a></h3>
+        <div class="active">${p.active}</div>
+        <p>${p.short}</p>
+        <div class="product-price">${money(p.price)}</div>
+        <button class="btn light block" type="button" onclick="addToCart('${p.id}')">Adicionar ao plano</button>
+      </div>
+    </article>`;
+  }
+  qsa('[data-products-grid]').forEach(grid=>{ grid.innerHTML = products.map(productCard).join(''); });
+  qsa('[data-featured-products]').forEach(grid=>{ grid.innerHTML = products.map(productCard).join(''); });
+
+  // catalog filters
+  qsa('[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{
+    qsa('[data-filter]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const val = btn.dataset.filter;
+    qsa('.product-tile').forEach(card=>{
+      const ok = val === 'Todos' || card.dataset.category === val || card.dataset.tags.toLowerCase().includes(val.toLowerCase());
+      card.style.display = ok ? '' : 'none';
+    });
+  }));
+
+  // kits
+  qsa('[data-kits-grid]').forEach(grid=>{
+    grid.innerHTML = kits.map(k=>`<article class="kit-card">
+      <div class="page-kicker">${k.products.length} produtos</div>
+      <h3>${k.name}</h3>
+      <p>${k.focus}</p>
+      <ul>${k.products.map(id=>`<li>${byId(id).name}</li>`).join('')}</ul>
+      <div class="price">${money(k.price)}</div>
+      <button class="btn dark block" type="button" onclick="addKit('${k.id}')">Adicionar kit</button>
+    </article>`).join('');
+  });
+  window.addKit = function(id){ const kit = kits.find(k=>k.id===id); if(!kit) return; setCart([...getCart(), ...kit.products]); toast(`${kit.name} adicionado ao plano`); openCart(false); };
+
+  // accordion
+  qsa('[data-acc]').forEach(item=>{ const head = qs('.acc-head', item); head?.addEventListener('click',()=>item.classList.toggle('open')); });
+
+  // quiz
+  qsa('[data-option]').forEach(btn=>btn.addEventListener('click',()=>{
+    const group = btn.dataset.group;
+    qsa(`[data-group="${group}"]`).forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }));
+  const quizBtn = qs('#quizSubmit');
+  quizBtn?.addEventListener('click',()=>{
+    const pele = qs('[data-group="pele"].selected')?.dataset.value;
+    const foco = qs('[data-group="foco"].selected')?.dataset.value;
+    const experiencia = qs('[data-group="experiencia"].selected')?.dataset.value;
+    if(!pele || !foco || !experiencia){ toast('Responda as 3 etapas do diagnóstico.'); return; }
+    const ids = recommend(pele, foco, experiencia);
+    const result = qs('#quizResult');
+    qs('#resultTitle').textContent = titleFor(foco, experiencia);
+    qs('#resultDesc').textContent = descFor(pele, foco, experiencia);
+    qs('#resultProducts').innerHTML = ids.map(id=>{ const p=byId(id); return `<a class="result-product" href="${p.page}"><img src="${p.image}" alt="${p.name}"><div><strong>${p.name}</strong><p>${p.active}</p></div></a>`; }).join('');
+    qs('#addRoutineBtn').onclick = ()=>{ setCart([...getCart(), ...ids]); toast('Rotina adicionada ao plano'); };
+    result.classList.add('show');
+    result.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+  function recommend(pele,foco,exp){
+    let ids = [];
+    if(foco==='oleosidade') ids = ['seboclin','keraclin'];
+    if(foco==='acne') ids = ['seboclin','acnexyl'];
+    if(foco==='manchas') ids = ['seboclin','anexregen'];
+    if(foco==='textura') ids = ['keraclin','anexregen'];
+    if(pele==='sensivel') ids = ids.filter(id=>id!=='acnexyl' && id!=='keraclin');
+    if(exp==='iniciante' && ids.length>2) ids = ids.slice(0,2);
+    if(exp==='avancado' && !ids.includes('anexregen') && foco!=='acne') ids.push('anexregen');
+    return ids.length ? ids : ['anexregen'];
+  }
+  function titleFor(foco, exp){
+    const base = {oleosidade:'Rotina Controle', acne:'Rotina Antiacne', manchas:'Rotina Pele Uniforme', textura:'Rotina Renovação'}[foco] || 'Rotina BioVita';
+    return exp === 'iniciante' ? `${base} Essencial` : exp === 'avancado' ? `${base} Completa` : `${base} Progressiva`;
+  }
+  function descFor(pele,foco,exp){ return `Indicação para pele ${pele}, com foco em ${foco}. A rotina foi ajustada para perfil ${exp}, priorizando tolerância, clareza de uso e função dermatológica.`; }
+
+  // checkout/finalizar
+  function renderCheckoutSummary(){
+    const box = qs('#checkoutItems'); if(!box) return;
+    const items=getCart().map(byId).filter(Boolean);
+    box.innerHTML = items.length ? items.map(p=>`<div class="cart-item"><img src="${p.image}" alt="${p.name}"><div><h4>${p.name}</h4><p>${p.category}</p><strong>${money(p.price)}</strong></div><button class="cart-remove" onclick="removeFromCart('${p.id}')">×</button></div>`).join('') : '<div class="empty-state">Nenhum produto selecionado.</div>';
+    const total = items.reduce((s,p)=>s+p.price,0);
+    qsa('[data-checkout-total]').forEach(el=>el.textContent=money(total));
+  }
+  qs('#generateProposal')?.addEventListener('click',()=>{
+    const items=getCart().map(byId).filter(Boolean);
+    if(!items.length){ toast('Adicione ao menos um produto ao plano.'); return; }
+    const name = qs('#clientName')?.value || 'Cliente não informado';
+    const contact = qs('#clientContact')?.value || 'Contato não informado';
+    const skin = qs('#clientSkin')?.value || 'Não informado';
+    const concern = qs('#clientConcern')?.value || 'Não informado';
+    const consultant = qs('#consultant')?.value || 'Consultor BioVita';
+    const total = items.reduce((s,p)=>s+p.price,0);
+    const proposal = qs('#proposal');
+    proposal.innerHTML = `
+      <div class="proposal-head"><div><div class="proposal-title">Ficha BioVita Dermo</div><p class="muted">Proposta de rotina dermocosmética</p></div><div><strong>${new Date().toLocaleDateString('pt-BR')}</strong></div></div>
+      <p><strong>Cliente:</strong> ${escapeHtml(name)}</p>
+      <p><strong>Contato:</strong> ${escapeHtml(contact)}</p>
+      <p><strong>Tipo de pele:</strong> ${escapeHtml(skin)}</p>
+      <p><strong>Principal incômodo:</strong> ${escapeHtml(concern)}</p>
+      <div style="margin:18px 0;border-top:1px solid var(--line)">${items.map(p=>`<p style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:10px 0"><span>${p.name} — ${p.active}</span><strong>${money(p.price)}</strong></p>`).join('')}</div>
+      <p style="display:flex;justify-content:space-between;font-size:18px"><strong>Total estimado:</strong><strong>${money(total)}</strong></p>
+      <p class="legal-note">Uso demonstrativo para apresentação escolar. As informações não substituem avaliação dermatológica. Em caso de irritação, sensibilidade ou condição de pele persistente, procure orientação profissional.</p>
+      <div class="signature-line">${escapeHtml(consultant)} — assinatura do consultor</div>
+      <div class="signature-line">${escapeHtml(name)} — assinatura do interessado</div>`;
+    proposal.classList.add('show');
+    proposal.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  qs('#printProposal')?.addEventListener('click',()=>window.print());
+  function escapeHtml(str){ return String(str).replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+  function toast(msg){
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#11110f;color:white;padding:12px 20px;z-index:999;border:1px solid rgba(255,255,255,.2);font-size:11px;text-transform:uppercase;letter-spacing:.13em;box-shadow:0 14px 40px rgba(0,0,0,.18)';
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2300);
+  }
+
+  // reveal
+  const observer = new IntersectionObserver(entries=>entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); }),{threshold:.12});
+  qsa('.fade-up').forEach(el=>observer.observe(el));
+  updateCartUI();
+})();

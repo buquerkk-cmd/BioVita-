@@ -1,0 +1,73 @@
+window.BIOVITA_PRODUCTS = [
+  {
+    id: 'seboclin',
+    name: 'Seboclin',
+    category: 'Limpeza',
+    type: 'Gel de Limpeza Dermatológico',
+    active: 'Ácido Salicílico 2%',
+    price: 69.90,
+    image: 'assets/seboclin.jpg',
+    page: 'produto-seboclin.html',
+    tags: ['oleosidade','acne','poros','limpeza','pele oleosa'],
+    short: 'Limpeza diária para pele oleosa e acneica, com foco em sebo, poros e sensação de pele limpa.',
+    indication: ['Pele oleosa', 'Pele acneica', 'Poros obstruídos', 'Excesso de brilho'],
+    benefits: ['Ajuda a remover excesso de sebo', 'Auxilia na desobstrução dos poros', 'Contribui para uma rotina antiacne mais organizada'],
+    use: 'Aplicar na pele úmida, massagear suavemente e enxaguar. Ajustar a frequência conforme tolerância da pele.',
+    warning: 'Pode ressecar peles sensíveis. Evite contato com os olhos. Produto demonstrativo; não substitui avaliação dermatológica.'
+  },
+  {
+    id: 'keraclin',
+    name: 'Keraclin',
+    category: 'Renovação',
+    type: 'Esfoliante Dermatológico',
+    active: 'Ácido Salicílico 2%',
+    price: 64.90,
+    image: 'assets/keraclin.jpg',
+    page: 'produto-keraclin.html',
+    tags: ['textura','poros','renovação','oleosidade','esfoliante'],
+    short: 'Renovação de textura com proposta queratolítica e auxílio na desobstrução dos poros.',
+    indication: ['Textura irregular', 'Poros aparentes', 'Pele espessa ou oleosa', 'Rotina de renovação'],
+    benefits: ['Remove células mortas superficialmente', 'Ajuda na textura da pele', 'Complementa rotinas para oleosidade'],
+    use: 'Usar com moderação, preferencialmente à noite, evitando áreas sensibilizadas. Hidratação e proteção solar são indispensáveis.',
+    warning: 'Não associar a muitos ativos irritantes sem orientação. Produto demonstrativo; não substitui avaliação dermatológica.'
+  },
+  {
+    id: 'acnexyl',
+    name: 'Acnexyl',
+    category: 'Antiacne',
+    type: 'Creme Dermatológico Antiacne',
+    active: 'Peróxido de Benzoíla 5%',
+    price: 79.90,
+    image: 'assets/acnexyl.jpg',
+    page: 'produto-acnexyl.html',
+    tags: ['acne','antiacne','espinhas','inflamação','pele acneica'],
+    short: 'Cuidado antiacne pontual para peles com tendência a lesões acneicas.',
+    indication: ['Acne inflamatória leve', 'Espinhas recorrentes', 'Rotina antiacne', 'Pele oleosa com lesões'],
+    benefits: ['Apoia o controle de lesões acneicas', 'Complementa a limpeza dermatológica', 'Foco em tratamento localizado'],
+    use: 'Aplicar em pequena quantidade na região indicada, evitando excesso. Começar com frequência reduzida para observar tolerância.',
+    warning: 'Pode causar ressecamento, ardor e sensibilidade. Evite contato com tecidos coloridos. Produto demonstrativo; não substitui avaliação dermatológica.'
+  },
+  {
+    id: 'anexregen',
+    name: 'Anexregen',
+    category: 'Reparação',
+    type: 'Sérum Dermatológico Reparador',
+    active: 'Ácido Tranexâmico 3%',
+    price: 89.90,
+    image: 'assets/anexregen.jpg',
+    page: 'produto-anexregen.html',
+    tags: ['manchas','pós-acne','uniformização','reparação','barreira'],
+    short: 'Sérum para uniformização do tom, manchas pós-acne e suporte à recuperação da barreira cutânea.',
+    indication: ['Manchas pós-acne', 'Tom irregular', 'Pele sensibilizada', 'Rotina reparadora'],
+    benefits: ['Auxilia na uniformização do tom', 'Contribui para cuidado de hiperpigmentação', 'Apoia a barreira cutânea'],
+    use: 'Aplicar sobre a pele limpa, preferencialmente em rotina noturna ou conforme orientação. Uso de protetor solar é essencial.',
+    warning: 'Resultados dependem de constância e proteção solar. Produto demonstrativo; não substitui avaliação dermatológica.'
+  }
+];
+
+window.BIOVITA_KITS = [
+  { id: 'kit-oleosidade', name: 'Kit Controle da Oleosidade', products: ['seboclin','keraclin'], price: 119.90, focus: 'Limpeza + renovação para pele oleosa.' },
+  { id: 'kit-antiacne', name: 'Kit Antiacne', products: ['seboclin','acnexyl'], price: 139.90, focus: 'Rotina antiacne objetiva para limpeza e cuidado pontual.' },
+  { id: 'kit-uniforme', name: 'Kit Pele Uniforme', products: ['seboclin','anexregen'], price: 149.90, focus: 'Limpeza + reparação para manchas pós-acne.' },
+  { id: 'kit-completo', name: 'Kit Rotina Completa BioVita', products: ['seboclin','keraclin','acnexyl','anexregen'], price: 249.90, focus: 'Limpeza, renovação, antiacne e reparação.' }
+];
